@@ -39,7 +39,10 @@ export default function Home() {
     try {
       // Simulate upload progress
       const uploadInterval = setInterval(() => {
-        setUploadProgress((prev) => Math.min(prev + Math.random() * 30, 90).toPrecision(2) as any);
+        setUploadProgress((prev) => {
+          const next = Math.min(Number(prev) + Math.random() * 30, 90);
+          return Number(next.toFixed(2));
+        });
       }, 50);
 
       // Read file as base64
@@ -83,7 +86,10 @@ export default function Home() {
 
       // Process with OCR
       const ocrInterval = setInterval(() => {
-        setOcrProgress((prev) => Math.min(prev + Math.random() * 15, 95));
+        setOcrProgress((prev) => {
+          const next = Math.min(Number(prev) + Math.random() * 15, 95);
+          return Number(next.toFixed(2));
+        });
       }, 50);
 
       const ocrRes = await fetch('/api/process-ocr', {
@@ -155,8 +161,8 @@ export default function Home() {
               {/* Progress Display */}
               {(isUploading || isProcessing) && (
                 <ProgressDisplay
-                  uploadProgress={uploadProgress.toPrecision(2) as any}
-                  ocrProgress={ocrProgress.toPrecision(2) as any}
+                  uploadProgress={uploadProgress}
+                  ocrProgress={ocrProgress}
                   currentPage={currentPage}
                   totalPages={totalPages}
                   isUploading={isUploading}

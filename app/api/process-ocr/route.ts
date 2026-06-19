@@ -62,7 +62,7 @@ export async function POST(
     // Use the Node.js worker from tesseract.js npm package
     const nodeWorkerPath = path.join(
       process.cwd(),
-      "node_modules",
+      "public",
       "tesseract.js",
       "src",
       "worker-script",
