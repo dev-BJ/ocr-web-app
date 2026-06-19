@@ -78,7 +78,7 @@ export function ResultsViewer({
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-lg font-semibold text-primary-foreground">{fileName}</h2>
+          <h2 className="text-lg font-semibold text-muted-foreground">{fileName}</h2>
           <p className="text-sm text-muted-foreground">{pages.length} page(s) processed</p>
         </div>
         <button
