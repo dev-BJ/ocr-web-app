@@ -59,24 +59,29 @@ export async function POST(
     const imageData = Buffer.from(fileBuffer, "base64");
     let results: PageResult[] = [];
 
-    // Use the Node.js worker from tesseract.js npm package
-    const nodeWorkerPath = path.join(
-      process.cwd(),
-      "public",
-      "tesseract.js",
-      "src",
-      "worker-script",
-      "node",
-      "index.js"
-    );
+    // Resolve the worker script using Node's module resolution so the
+    // packaged tesseract.js modules stay linked together. Avoid pointing
+    // into `public/` copies because the worker expects relative requires
+    // (e.g. `require('..')`) that break when the file is moved.
+    // Note: Vercel Serverless functions may restrict worker_threads; if
+    // you run into runtime errors consider running OCR on the client or
+    // using an external OCR API.
+    let nodeWorkerPath: string | undefined;
+    try {
+      // Prefer require.resolve to get the installed package path
+      // (keeps relative requires working).
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      nodeWorkerPath = require.resolve('tesseract.js/src/worker/node/index.js');
+    } catch (e) {
+      // Fallback: try to construct path from node_modules
+      nodeWorkerPath = path.join(process.cwd(), 'node_modules', 'tesseract.js', 'src', 'worker', 'node', 'index.js');
+    }
 
     // Initialize worker with Node.js-compatible configuration
-    worker = await createWorker("eng", 1, {
+    worker = await createWorker('eng', 1, {
       workerPath: nodeWorkerPath,
       logger: (log) => {
-        // console.log(
-        //   `[Tesseract] ${log.status} (${Math.round(log.progress * 100)}%)`,
-        // );
+        // suppressed by default
       },
     });
 

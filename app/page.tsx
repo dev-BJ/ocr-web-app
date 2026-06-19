@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { FileUploadZone } from '@/components/file-upload-zone';
 import { ProgressDisplay } from '@/components/progress-display';
 import { ResultsViewer } from '@/components/results-viewer';
+import Tesseract from 'tesseract.js';
 
 interface PageResult {
   page: number;
@@ -31,97 +32,157 @@ export default function Home() {
   const [result, setResult] = useState<OCRResult | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const handleFileSelect = async (file: File, fileType: 'image' | 'pdf') => {
-    setError(null);
-    setIsUploading(true);
-    setUploadProgress(0);
+  // const handleFileSelect = async (file: File, fileType: 'image' | 'pdf') => {
+  //   setError(null);
+  //   setIsUploading(true);
+  //   setUploadProgress(0);
 
+  //   try {
+  //     // Simulate upload progress
+  //     const uploadInterval = setInterval(() => {
+  //       setUploadProgress((prev) => {
+  //         const next = Math.min(Number(prev) + Math.random() * 30, 90);
+  //         return Number(next.toFixed(2));
+  //       });
+  //     }, 50);
+
+  //     // Read file as base64
+  //     const fileBuffer = await new Promise<string>((resolve) => {
+  //       const reader = new FileReader();
+  //       reader.onload = () => {
+  //         const result = reader.result as string;
+  //         resolve(result.split(',')[1] || '');
+  //       };
+  //       reader.readAsDataURL(file);
+  //     });
+
+  //     clearInterval(uploadInterval);
+  //     setUploadProgress(100);
+
+  //     // Validate file with backend
+  //     const formData = new FormData();
+  //     formData.append('file', file);
+
+  //     const uploadRes = await fetch('/api/upload', {
+  //       method: 'POST',
+  //       body: formData,
+  //     });
+
+  //     if (!uploadRes.ok) {
+  //       const uploadData = await uploadRes.json();
+  //       throw new Error(uploadData.error || 'File validation failed');
+  //     }
+
+  //     setIsUploading(false);
+  //     setIsProcessing(true);
+  //     setOcrProgress(0);
+  //     setCurrentPage(0);
+
+  //     // Determine pages to process
+  //     let pagesToProcess = undefined;
+  //     if (fileType === 'pdf') {
+  //       // For PDFs, we'll process all pages but Tesseract will handle them
+  //       // The backend will determine total pages
+  //     }
+
+  //     // Process with OCR
+  //     const ocrInterval = setInterval(() => {
+  //       setOcrProgress((prev) => {
+  //         const next = Math.min(Number(prev) + Math.random() * 15, 95);
+  //         return Number(next.toFixed(2));
+  //       });
+  //     }, 50);
+
+  //     const ocrRes = await fetch('/api/process-ocr', {
+  //       method: 'POST',
+  //       headers: { 'Content-Type': 'application/json' },
+  //       body: JSON.stringify({
+  //         fileType,
+  //         fileName: file.name,
+  //         fileBuffer,
+  //         pageNumbers: pagesToProcess,
+  //       }),
+  //     });
+
+  //     clearInterval(ocrInterval);
+  //     setOcrProgress(100);
+
+  //     if (!ocrRes.ok) {
+  //       const ocrData = await ocrRes.json();
+  //       throw new Error(ocrData.error || 'OCR processing failed');
+  //     }
+
+  //     const ocrData: OCRResult = await ocrRes.json();
+
+  //     if (!ocrData.success) {
+  //       throw new Error(ocrData.error || 'OCR processing failed');
+  //     }
+
+  //     setTotalPages(ocrData.totalPages);
+  //     setResult(ocrData);
+  //   } catch (err) {
+  //     console.error('[Error]', err);
+  //     setError(err instanceof Error ? err.message : 'An error occurred');
+  //   } finally {
+  //     setIsUploading(false);
+  //     setIsProcessing(false);
+  //     setUploadProgress(0);
+  //     setOcrProgress(0);
+  //   }
+  // };
+
+  const handleFileSelect = async (file: File, fileType: "image" | "pdf") => {
     try {
-      // Simulate upload progress
-      const uploadInterval = setInterval(() => {
-        setUploadProgress((prev) => {
-          const next = Math.min(Number(prev) + Math.random() * 30, 90);
-          return Number(next.toFixed(2));
-        });
-      }, 50);
+      setError(null);
 
-      // Read file as base64
-      const fileBuffer = await new Promise<string>((resolve) => {
-        const reader = new FileReader();
-        reader.onload = () => {
-          const result = reader.result as string;
-          resolve(result.split(',')[1] || '');
-        };
-        reader.readAsDataURL(file);
-      });
-
-      clearInterval(uploadInterval);
-      setUploadProgress(100);
-
-      // Validate file with backend
-      const formData = new FormData();
-      formData.append('file', file);
-
-      const uploadRes = await fetch('/api/upload', {
-        method: 'POST',
-        body: formData,
-      });
-
-      if (!uploadRes.ok) {
-        const uploadData = await uploadRes.json();
-        throw new Error(uploadData.error || 'File validation failed');
-      }
-
-      setIsUploading(false);
       setIsProcessing(true);
       setOcrProgress(0);
       setCurrentPage(0);
 
       // Determine pages to process
       let pagesToProcess = undefined;
-      if (fileType === 'pdf') {
+      if (fileType === "pdf") {
         // For PDFs, we'll process all pages but Tesseract will handle them
         // The backend will determine total pages
       }
 
-      // Process with OCR
-      const ocrInterval = setInterval(() => {
-        setOcrProgress((prev) => {
-          const next = Math.min(Number(prev) + Math.random() * 15, 95);
-          return Number(next.toFixed(2));
-        });
-      }, 50);
+      const result = await Tesseract.recognize(
+        URL.createObjectURL(file),
+        "eng",
+        {
+          logger: (log) => {
+            setOcrProgress(25);
+            // console.log(`[Tesseract] ${log.status} (${Math.round(log.progress * 100)}%)`);
+            if (log.status === "recognizing text") {
+              const percent = Number((log.progress * 100).toFixed(2));
+              setOcrProgress(percent);
+            }
+          },
+        },
+      );
 
-      const ocrRes = await fetch('/api/process-ocr', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          fileType,
-          fileName: file.name,
-          fileBuffer,
-          pageNumbers: pagesToProcess,
-        }),
+      if (!result.data.text) {
+        throw new Error("OCR processing failed");
+      }
+
+      setTotalPages(result.data.blocks?.length || 1);
+      const results = [];
+      results.push({
+        page: 1,
+        text: result.data.text,
+        confidence: result.data.confidence,
       });
-
-      clearInterval(ocrInterval);
-      setOcrProgress(100);
-
-      if (!ocrRes.ok) {
-        const ocrData = await ocrRes.json();
-        throw new Error(ocrData.error || 'OCR processing failed');
-      }
-
-      const ocrData: OCRResult = await ocrRes.json();
-
-      if (!ocrData.success) {
-        throw new Error(ocrData.error || 'OCR processing failed');
-      }
-
-      setTotalPages(ocrData.totalPages);
-      setResult(ocrData);
+      setResult({
+        success: true,
+        fileName: file.name,
+        fileType,
+        pages: results,
+        totalPages: 1,
+        extractedText: result.data.text,
+      });
     } catch (err) {
-      console.error('[Error]', err);
-      setError(err instanceof Error ? err.message : 'An error occurred');
+      console.error("[Error]", err);
+      setError(err instanceof Error ? err.message : "An error occurred");
     } finally {
       setIsUploading(false);
       setIsProcessing(false);

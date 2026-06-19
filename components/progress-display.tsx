@@ -29,7 +29,7 @@ export function ProgressDisplay({
           </div>
           <div className="h-2 w-full overflow-hidden rounded-full bg-gray-200">
             <div
-              className="h-full bg-primary transition-all duration-300"
+              className="h-full bg-amber-900 transition-all duration-300"
               style={{ width: `${uploadProgress}%` }}
             />
           </div>
@@ -46,7 +46,7 @@ export function ProgressDisplay({
           </div>
           <div className="h-2 w-full overflow-hidden rounded-full bg-gray-200">
             <div
-              className="h-full bg-primary transition-all duration-300"
+              className="h-full bg-amber-900 transition-all duration-300"
               style={{ width: `${ocrProgress}%` }}
             />
           </div>
